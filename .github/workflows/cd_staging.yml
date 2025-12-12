@@ -21,11 +21,10 @@ jobs:
           ssh ubuntu@35.154.216.90 "
             cd test_ci_cd &&
             git pull origin main &&
-            corepack enable &&
             corepack prepare pnpm@latest --activate &&
             pnpm install &&
             pnpm run build &&
-            pm2 restart fe-sever ||
-            pm2 start ecosystem.config.js &&
-            pm2 save
+            pm2 restart fe-sever &&
+            pm2 restart http-sever &&
+            pm2 restart ws-sever
           "
