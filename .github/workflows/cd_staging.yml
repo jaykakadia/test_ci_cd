@@ -1,19 +1,31 @@
 name: Deploy to staging
+
 on:
   push:
     branches: [ main ]
 
 jobs:
-  redeploy_everything:
+  redeploy:
     runs-on: ubuntu-latest
-    name: Deploying everything to the staging cluster
-    steps:
-      - run: |
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" &> ~/ssh_key
-          mkdir -p /home/runner/.ssh
-          ls /home/runner/.ssh
-          touch /home/runner/.ssh/known_hosts
-          echo "${{ secrets.KNOWN_HOSTS }}" &> /home/runner/.ssh/known_hosts
-          chmod 700 /home/runner/ssh_key
-          ssh -i ~/ssh_key ubuntu@35.154.216.90 -t "cd test_ci_cd/ && git pull origin main && export PATH=/root/.nvm/versions/node/v22.13.1/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin && npm install -g pnpm && pnpm install && pnpm run build && pm2 restart fe-sever && pm2 restart http-sever && pm2 restart ws-sever"
 
+    steps:
+      - name: Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          echo "${{ secrets.KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+
+      - name: Deploy to EC2
+        run: |
+          ssh ubuntu@35.154.216.90 "
+            cd test_ci_cd &&
+            git pull origin main &&
+            corepack enable &&
+            corepack prepare pnpm@latest --activate &&
+            pnpm install &&
+            pnpm run build &&
+            pm2 restart fe-sever ||
+            pm2 start ecosystem.config.js &&
+            pm2 save
+          "
