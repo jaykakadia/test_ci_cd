@@ -24,7 +24,7 @@ jobs:
             corepack prepare pnpm@latest --activate &&
             pnpm install &&
             pnpm run build &&
-            pm2 restart fe-sever &&
-            pm2 restart http-sever &&
-            pm2 restart ws-sever
-          "
+            pnpm install &&
+            pnpm run build &&
+            pm2 restart all
+            "
